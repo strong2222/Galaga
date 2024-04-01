@@ -18,7 +18,7 @@ import javax.imageio.ImageIO;
 
 public class Stage {
     
-    private List<Enemy> enemies;
+    private  List<Enemy> enemies;
     GamePanel gp;
     private List<Bullet> bullets;
     Player player;
@@ -28,13 +28,16 @@ public class Stage {
     
     private long lastFireTime; 
     private long fireCooldown = 500;
+    public boolean isStageCleared =false;
     
     
      BufferedImage bulletImage;
      
-   private int currentAttackerIndex = 0;
+     int currentAttackerIndex=0;
+   
     
     public Stage(Player player , GamePanel gp,Key KeyHandler) {
+   
         bullets = new ArrayList<>();
         enemies = new ArrayList<>();
         
@@ -45,19 +48,19 @@ public class Stage {
         
     }
 
-
-
     public void update() {
         
       for (Enemy enemy : enemies) {
             enemy.update();
+            
           try {
               player.checkCollisionWithEnemies(enemy);
           } catch (IOException ex) {
               Logger.getLogger(Stage.class.getName()).log(Level.SEVERE, null, ex);
           }
         }
-        AttackPattern(enemies);
+        
+       AttackPattern(enemies);
         if (keyHandler.fire && !lastFireState) {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastFireTime >= fireCooldown) {
@@ -68,6 +71,7 @@ public class Stage {
         lastFireState = keyHandler.fire;
        
         Iterator<Bullet> iterator = bullets.iterator();
+        
        
         while (iterator.hasNext()) {
             
@@ -75,17 +79,26 @@ public class Stage {
             bullet.colition.y = bullet.y;
             bullet.y -= bullet.speed;
             
-            // Check for collision with enemies
+          
             for (Enemy enemy : enemies) {
-                if (enemy.colition != null && enemy.checkCollision(bullet.colition) || bullet.y<0) {
+                if (enemy.colition != null && enemy.checkCollision(bullet.colition)) {
+                    enemies.remove(enemy);
+                    iterator.remove();
+                    
+                    break;
+                }
+                if(bullet.y<0){
                     iterator.remove();
                     break;
                 }
+               
             }
+                
             
 
            
         }
+        isCompleted();
       
     }
     
@@ -113,13 +126,12 @@ public class Stage {
     
         try {
             bulletImage = ImageIO.read(getClass().getResourceAsStream("/source/player/sum.png"));
+            
         } catch (IOException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
 }
-
    
-
     public void draw(Graphics2D g2d) {
         
         for(Enemy enemy: enemies){
@@ -127,35 +139,50 @@ public class Stage {
         }
         
         
-         for (Bullet bullet : bullets) {
+        for (Bullet bullet : bullets) {
            
           g2d.draw(bullet.colition);
           g2d.drawImage(bulletImage, bullet.x,bullet.y-10,gp.tileSize,gp.tileSize,null);
           
          
           }
-        
-        
     }
    private void AttackPattern(List<Enemy> enemies) {
-     
-    
-    for (Enemy enemy : enemies) {
+  
+    if (!enemies.isEmpty()) {
+        // Increment the currentAttackerIndex
+        currentAttackerIndex = (currentAttackerIndex + 1) % enemies.size();
+
+        // Get the current attacker
+        Enemy attacker = enemies.get(currentAttackerIndex);
         
-        if (enemies.indexOf(enemy) == currentAttackerIndex) {
-            enemy.attack1(); 
-            currentAttackerIndex = (currentAttackerIndex + 1) % enemies.size(); 
-            break; 
-        }
+        // Perform the attack for the current attacker
+        attacker.attack1();
     }
 }
+
+   
    
   
     public boolean isCompleted() {
+        
        if(enemies.isEmpty()){
-           System.out.println("suga");
+           
+           
+           return true;
        }
-        return false;
+       else{
+           
+           return false;
+       }
+    }
+
+    public void reset() {
+        this.player = player;
+       enemies.clear();
+        this.initialize();
+        
+        
     }
 }
 
