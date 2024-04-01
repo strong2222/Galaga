@@ -14,8 +14,6 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
-
-
 import Main.GamePanel;
 import java.awt.Color;
 
@@ -28,11 +26,16 @@ public final class Player extends Character{
     
     GamePanel gp;
     Key keyHandler;
-    public static boolean isAlive = true;
+    public static boolean isAlive;
     BufferedImage playerImages;
     public int lives=3;
-    private long lastCollisionDetectionTime; // Track the time of the last collision detection
-    private long collisionCooldown = 3000; // Cooldown duration in milliseconds
+    private long lastCollisionDetectionTime; 
+    private long collisionCooldown = 3000; 
+    private boolean isBlinking = false; 
+    private long lastHitTime; 
+    private long blinkInterval = 3000; 
+    
+    
     
     
     public Player(GamePanel gp , Key keyhandler){
@@ -48,6 +51,14 @@ public final class Player extends Character{
        
     }
     public void update(){
+        
+        
+        long elapsedTime = System.currentTimeMillis() - lastHitTime;
+        if (elapsedTime < blinkInterval) {
+            isBlinking = !isBlinking; // Toggle the blinking flag at each blink interval
+        } else {
+            isBlinking = false; // Stop blinking after the blink interval
+        }
         if(keyHandler.up == true){
            y = y-speed;
            colition.y = y;
@@ -108,9 +119,13 @@ public final class Player extends Character{
     }
     public void draw(Graphics2D g2d){
             
+        if (!isBlinking) {
            g2d.setColor(new Color(0,0,0,0));
            g2d.drawImage(playerImages, x,y,gp.tileSize,gp.tileSize,null);
-           g2d.draw(colition);
+        
+        }
+           
+           liveDraw(g2d);
     }
      public void checkCollisionWithEnemies(Enemy enemy) throws IOException {
         long currentTime = System.currentTimeMillis();
@@ -119,12 +134,17 @@ public final class Player extends Character{
             if (enemy.colition != null && this.colition.intersects(enemy.colition)) {
                 
                 
-                playerImages = ImageIO.read(getClass().getResourceAsStream("/source/player/explode.png"));
+//                playerImages = ImageIO.read(getClass().getResourceAsStream("/source/player/explode.png"));
                 
                 lives = lives - 1;
                 lastCollisionDetectionTime = currentTime; // Update the last collision detection time
+                startBlinking();
             }
         }
+    }
+     private void startBlinking() {
+        isBlinking = true; // Set the blinking flag to true
+        lastHitTime = System.currentTimeMillis(); // Reset the last hit time
     }
 
     public Key getKeyHandler() {
@@ -139,6 +159,22 @@ public final class Player extends Character{
             return true;
         }
     }
+    public void liveDraw(Graphics2D g2d){
+        for(int i=0;i<this.lives;i++){
+            g2d.drawImage(playerImages, i*50, 0,50,50, null);
+        }
+        
+    }
+
+    public void reset() {
+         this.x = 375;
+        this.y = 600;
+         this.colition = new Rectangle(x,y,gp.tileSize,gp.tileSize-10);
+        this.lives= 3;
+        getImage();
+        
+    }
+    
     
 
    
